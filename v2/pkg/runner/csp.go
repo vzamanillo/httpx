@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/projectdiscovery/httpx/v2/pkg/utils/sliceutils"
-	)
+)
 
 // CSPHeaders is an incomplete list of most v2/pkg CSP headers
 var CSPHeaders []string = []string{

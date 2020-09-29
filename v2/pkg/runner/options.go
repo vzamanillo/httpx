@@ -1,17 +1,17 @@
 package runner
 
 import (
-	"fmt"
 	"flag"
-	"regexp"
+	"fmt"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/httpx/v2/pkg/customheader"
+	customport "github.com/projectdiscovery/httpx/v2/pkg/customports"
 	"github.com/projectdiscovery/httpx/v2/pkg/utils/fileutils"
 	"github.com/projectdiscovery/httpx/v2/pkg/utils/sliceutils"
-	customport "github.com/projectdiscovery/httpx/v2/pkg/customports"
 )
 
 // RequestOverride contains the URI path to override the request

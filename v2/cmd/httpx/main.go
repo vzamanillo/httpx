@@ -17,12 +17,12 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/httpx/v2/pkg/cache"
 	customport "github.com/projectdiscovery/httpx/v2/pkg/customports"
-	"github.com/projectdiscovery/httpx/v2/pkg/utils/httputils"
+	"github.com/projectdiscovery/httpx/v2/pkg/runner"
 	"github.com/projectdiscovery/httpx/v2/pkg/utils/fileutils"
+	"github.com/projectdiscovery/httpx/v2/pkg/utils/httputils"
 	"github.com/projectdiscovery/httpx/v2/pkg/utils/iputils"
 	"github.com/projectdiscovery/httpx/v2/pkg/utils/sliceutils"
 	"github.com/projectdiscovery/httpx/v2/pkg/utils/stringutils"
-	"github.com/projectdiscovery/httpx/v2/pkg/runner"
 	"github.com/projectdiscovery/mapcidr"
 	"github.com/projectdiscovery/rawhttp"
 	"github.com/remeh/sizedwaitgroup"
@@ -599,20 +599,20 @@ type Result struct {
 	Title         string `json:"title"`
 	str           string
 	err           error
-	WebServer     string         `json:"webserver"`
-	Response      string         `json:"serverResponse,omitempty"`
-	ContentType   string         `json:"content-type,omitempty"`
-	Method        string         `json:"method"`
-	IP            string         `json:"ip"`
-	ContentLength int            `json:"content-length"`
-	StatusCode    int            `json:"status-code"`
+	WebServer     string          `json:"webserver"`
+	Response      string          `json:"serverResponse,omitempty"`
+	ContentType   string          `json:"content-type,omitempty"`
+	Method        string          `json:"method"`
+	IP            string          `json:"ip"`
+	ContentLength int             `json:"content-length"`
+	StatusCode    int             `json:"status-code"`
 	TLSData       *runner.TLSData `json:"tls,omitempty"`
 	CSPData       *runner.CSPData `json:"csp,omitempty"`
-	VHost         bool           `json:"vhost"`
-	WebSocket     bool           `json:"websocket,omitempty"`
-	Pipeline      bool           `json:"pipeline,omitempty"`
-	HTTP2         bool           `json:"http2"`
-	CDN           bool           `json:"cdn"`
+	VHost         bool            `json:"vhost"`
+	WebSocket     bool            `json:"websocket,omitempty"`
+	Pipeline      bool            `json:"pipeline,omitempty"`
+	HTTP2         bool            `json:"http2"`
+	CDN           bool            `json:"cdn"`
 }
 
 // JSON the result
