@@ -125,6 +125,8 @@ func main() {
 	scanopts.OutputIP = options.OutputIP
 	scanopts.OutputCName = options.OutputCName
 	scanopts.OutputCDN = options.OutputCDN
+	scanopts.OutputResponseTime = options.OutputResponseTime
+
 	// output verb if more than one is specified
 	if len(scanopts.Methods) > 1 && !options.Silent {
 		scanopts.OutputMethod = true
@@ -352,6 +354,7 @@ type scanOptions struct {
 	OutputIP           bool
 	OutputCName        bool
 	OutputCDN          bool
+	OutputResponseTime bool
 }
 
 func analyze(hp *runner.HTTPX, protocol, domain string, port int, method string, scanopts *scanOptions) Result {
@@ -544,6 +547,10 @@ retry:
 		builder.WriteString(" [cdn]")
 	}
 
+	if scanopts.OutputResponseTime {
+		builder.WriteString(fmt.Sprintf(" [%s]", resp.Duration))
+	}
+
 	// store responses in directory
 	if scanopts.StoreResponse {
 		domainFile := fmt.Sprintf("%s%s", domain, scanopts.RequestURI)
@@ -587,6 +594,7 @@ retry:
 		IPs:           ips,
 		CNAMEs:        cnames,
 		CDN:           isCDN,
+		Duration:      resp.Duration,
 	}
 }
 
@@ -614,6 +622,7 @@ type Result struct {
 	Pipeline      bool            `json:"pipeline,omitempty"`
 	HTTP2         bool            `json:"http2"`
 	CDN           bool            `json:"cdn"`
+	Duration      time.Duration  `json:"duration"`
 }
 
 // JSON the result

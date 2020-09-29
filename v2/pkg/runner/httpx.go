@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/microcosm-cc/bluemonday"
@@ -121,6 +122,7 @@ func New(options *ClientOptions) (*HTTPX, error) {
 
 // Do http request
 func (h *HTTPX) Do(req *retryablehttp.Request) (*Response, error) {
+	timeStart := time.Now()
 	httpresp, err := h.getResponse(req)
 
 	if err != nil {
@@ -176,6 +178,8 @@ func (h *HTTPX) Do(req *retryablehttp.Request) (*Response, error) {
 	}
 
 	resp.CSPData = h.CSPGrab(httpresp)
+
+	resp.Duration = time.Since(timeStart)
 
 	return &resp, nil
 }

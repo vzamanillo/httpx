@@ -78,6 +78,7 @@ type Options struct {
 	Pipeline                  bool
 	HTTP2Probe                bool
 	OutputCDN                 bool
+	OutputResponseTime        bool
 }
 
 // ClientOptions contains configuration options for the client
@@ -173,6 +174,7 @@ func ParseOptions() *Options {
 	flag.StringVar(&options.OutputMatchRegex, "match-regex", "", "Match Regex")
 	flag.BoolVar(&options.OutputCName, "cname", false, "Output first cname")
 	flag.BoolVar(&options.OutputCDN, "cdn", false, "Check if domain's ip belongs to known CDN (akamai, cloudflare, ..)")
+	flag.BoolVar(&options.OutputResponseTime, "response-time", false, "Output the response time")
 
 	flag.Parse()
 
