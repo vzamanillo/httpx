@@ -23,7 +23,7 @@ type HTTPX struct {
 	client          *retryablehttp.Client
 	client2         *http.Client
 	Filters         []Filter
-	Options         *Options
+	Options         *ClientOptions
 	htmlPolicy      *bluemonday.Policy
 	CustomHeaders   map[string]string
 	RequestOverride *RequestOverride
@@ -31,7 +31,7 @@ type HTTPX struct {
 }
 
 // New httpx instance
-func New(options *Options) (*HTTPX, error) {
+func New(options *ClientOptions) (*HTTPX, error) {
 	httpx := &HTTPX{}
 	dialer, err := cache.NewDialer(cache.DefaultOptions)
 	if err != nil {
@@ -169,11 +169,6 @@ func (h *HTTPX) Do(req *retryablehttp.Request) (*Response, error) {
 	resp.CSPData = h.CSPGrab(httpresp)
 
 	return &resp, nil
-}
-
-// RequestOverride contains the URI path to override the request
-type RequestOverride struct {
-	URIPath string
 }
 
 // getResponse returns response from safe / unsafe request

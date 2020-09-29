@@ -3,13 +3,11 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -18,7 +16,6 @@ import (
 	_ "github.com/projectdiscovery/fdmax/autofdmax"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/httpx/common/cache"
-	"github.com/projectdiscovery/httpx/common/customheader"
 	customport "github.com/projectdiscovery/httpx/common/customports"
 	"github.com/projectdiscovery/httpx/common/fileutil"
 	"github.com/projectdiscovery/httpx/common/httputilz"
@@ -37,9 +34,9 @@ const (
 )
 
 func main() {
-	options := ParseOptions()
+	options := httpx.ParseOptions()
 
-	httpxOptions := httpx.DefaultOptions
+	httpxOptions := httpx.DefaultClientOptions
 	httpxOptions.Timeout = time.Duration(options.Timeout) * time.Second
 	httpxOptions.RetryMax = options.Retries
 	httpxOptions.FollowRedirects = options.FollowRedirects
@@ -62,16 +59,11 @@ func main() {
 		httpxOptions.CustomHeaders[key] = value
 	}
 
-	hp, err := httpx.New(&httpxOptions)
-	if err != nil {
-		gologger.Fatalf("Could not create httpx instance: %s\n", err)
-	}
-
 	var scanopts scanOptions
 
 	if options.InputRawRequest != "" {
 		var rawRequest []byte
-		rawRequest, err = ioutil.ReadFile(options.InputRawRequest)
+		rawRequest, err := ioutil.ReadFile(options.InputRawRequest)
 		if err != nil {
 			gologger.Fatalf("Could not read raw request from '%s': %s\n", options.InputRawRequest, err)
 		}
@@ -86,7 +78,7 @@ func main() {
 			httpxOptions.CustomHeaders[name] = value
 		}
 		scanopts.RequestBody = rrBody
-		options.rawRequest = string(rawRequest)
+		options.RawRequest = string(rawRequest)
 	}
 
 	// disable automatic host header for rawhttp if manually specified
@@ -96,25 +88,27 @@ func main() {
 			rawhttp.AutomaticHostHeader(false)
 		}
 	}
+
 	if strings.EqualFold(options.Methods, "all") {
 		scanopts.Methods = httputilz.AllHTTPMethods()
 	} else if options.Methods != "" {
 		scanopts.Methods = append(scanopts.Methods, stringz.SplitByCharAndTrimSpace(options.Methods, ",")...)
 	}
+
 	if len(scanopts.Methods) == 0 {
 		scanopts.Methods = append(scanopts.Methods, http.MethodGet)
 	}
-	protocol := httpx.HTTPS
+
 	scanopts.VHost = options.VHost
-	scanopts.OutputTitle = options.ExtractTitle
-	scanopts.OutputStatusCode = options.StatusCode
-	scanopts.OutputLocation = options.Location
-	scanopts.OutputContentLength = options.ContentLength
+	scanopts.ExtractTitle = options.ExtractTitle
+	scanopts.StatusCode = options.StatusCode
+	scanopts.Location = options.Location
+	scanopts.ContentLength = options.ContentLength
 	scanopts.StoreResponse = options.StoreResponse
-	scanopts.StoreResponseDirectory = options.StoreResponseDir
+	scanopts.StoreResponseDir = options.StoreResponseDir
 	scanopts.OutputServerHeader = options.OutputServerHeader
-	scanopts.OutputWithNoColor = options.NoColor
-	scanopts.ResponseInStdout = options.responseInStdout
+	scanopts.NoColor = options.NoColor
+	scanopts.ResponseInStdout = options.ResponseInStdout
 	scanopts.OutputWebSocket = options.OutputWebSocket
 	scanopts.TLSProbe = options.TLSProbe
 	scanopts.CSPProbe = options.CSPProbe
@@ -166,25 +160,25 @@ func main() {
 			}
 
 			// apply matchers and filters
-			if len(options.filterStatusCode) > 0 && slice.IntSliceContains(options.filterStatusCode, r.StatusCode) {
+			if len(options.FilterStatusCode) > 0 && slice.IntSliceContains(options.FilterStatusCode, r.StatusCode) {
 				continue
 			}
-			if len(options.filterContentLength) > 0 && slice.IntSliceContains(options.filterContentLength, r.ContentLength) {
+			if len(options.FilterContentLength) > 0 && slice.IntSliceContains(options.FilterContentLength, r.ContentLength) {
 				continue
 			}
-			if options.filterRegex != nil && options.filterRegex.MatchString(r.raw) {
+			if options.FilterRegex != nil && options.FilterRegex.MatchString(r.raw) {
 				continue
 			}
 			if options.OutputFilterString != "" && strings.Contains(strings.ToLower(r.raw), options.OutputFilterString) {
 				continue
 			}
-			if len(options.matchStatusCode) > 0 && !slice.IntSliceContains(options.matchStatusCode, r.StatusCode) {
+			if len(options.MatchStatusCode) > 0 && !slice.IntSliceContains(options.MatchStatusCode, r.StatusCode) {
 				continue
 			}
-			if len(options.matchContentLength) > 0 && !slice.IntSliceContains(options.matchContentLength, r.ContentLength) {
+			if len(options.MatchContentLength) > 0 && !slice.IntSliceContains(options.MatchContentLength, r.ContentLength) {
 				continue
 			}
-			if options.matchRegex != nil && !options.matchRegex.MatchString(r.raw) {
+			if options.MatchRegex != nil && !options.MatchRegex.MatchString(r.raw) {
 				continue
 			}
 			if options.OutputMatchString != "" && !strings.Contains(strings.ToLower(r.raw), options.OutputMatchString) {
@@ -226,8 +220,13 @@ func main() {
 		gologger.Fatalf("No input provided")
 	}
 
+	hp, err := httpx.New(&httpxOptions)
+	if err != nil {
+		gologger.Fatalf("Could not create httpx instance: %s\n", err)
+	}
+
 	for scanner.Scan() {
-		process(scanner.Text(), &wg, hp, protocol, &scanopts, output)
+		process(scanner.Text(), &wg, hp, httpx.HTTPS, &scanopts, output)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -328,30 +327,30 @@ func targets(target string) chan string {
 }
 
 type scanOptions struct {
-	Methods                []string
-	StoreResponseDirectory string
-	RequestURI             string
-	RequestBody            string
-	VHost                  bool
-	OutputTitle            bool
-	OutputStatusCode       bool
-	OutputLocation         bool
-	OutputContentLength    bool
-	StoreResponse          bool
-	OutputServerHeader     bool
-	OutputWebSocket        bool
-	OutputWithNoColor      bool
-	OutputMethod           bool
-	ResponseInStdout       bool
-	TLSProbe               bool
-	CSPProbe               bool
-	OutputContentType      bool
-	Unsafe                 bool
-	Pipeline               bool
-	HTTP2Probe             bool
-	OutputIP               bool
-	OutputCName            bool
-	OutputCDN              bool
+	Methods            []string
+	StoreResponseDir   string
+	RequestURI         string
+	RequestBody        string
+	VHost              bool
+	ExtractTitle       bool
+	StatusCode         bool
+	Location           bool
+	ContentLength      bool
+	StoreResponse      bool
+	OutputServerHeader bool
+	OutputWebSocket    bool
+	NoColor            bool
+	OutputMethod       bool
+	ResponseInStdout   bool
+	TLSProbe           bool
+	CSPProbe           bool
+	OutputContentType  bool
+	Unsafe             bool
+	Pipeline           bool
+	HTTP2Probe         bool
+	OutputIP           bool
+	OutputCName        bool
+	OutputCDN          bool
 }
 
 func analyze(hp *httpx.HTTPX, protocol, domain string, port int, method string, scanopts *scanOptions) Result {
@@ -404,9 +403,9 @@ retry:
 
 	builder.WriteString(fullURL)
 
-	if scanopts.OutputStatusCode {
+	if scanopts.StatusCode {
 		builder.WriteString(" [")
-		if !scanopts.OutputWithNoColor {
+		if !scanopts.NoColor {
 			// Color the status code based on its value
 			switch {
 			case resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices:
@@ -424,9 +423,9 @@ retry:
 		builder.WriteRune(']')
 	}
 
-	if scanopts.OutputLocation {
+	if scanopts.Location {
 		builder.WriteString(" [")
-		if !scanopts.OutputWithNoColor {
+		if !scanopts.NoColor {
 			builder.WriteString(aurora.Magenta(resp.GetHeaderPart("Location", ";")).String())
 		} else {
 			builder.WriteString(resp.GetHeaderPart("Location", ";"))
@@ -436,7 +435,7 @@ retry:
 
 	if scanopts.OutputMethod {
 		builder.WriteString(" [")
-		if !scanopts.OutputWithNoColor {
+		if !scanopts.NoColor {
 			builder.WriteString(aurora.Magenta(method).String())
 		} else {
 			builder.WriteString(method)
@@ -444,9 +443,9 @@ retry:
 		builder.WriteRune(']')
 	}
 
-	if scanopts.OutputContentLength {
+	if scanopts.ContentLength {
 		builder.WriteString(" [")
-		if !scanopts.OutputWithNoColor {
+		if !scanopts.NoColor {
 			builder.WriteString(aurora.Magenta(strconv.Itoa(resp.ContentLength)).String())
 		} else {
 			builder.WriteString(strconv.Itoa(resp.ContentLength))
@@ -456,7 +455,7 @@ retry:
 
 	if scanopts.OutputContentType {
 		builder.WriteString(" [")
-		if !scanopts.OutputWithNoColor {
+		if !scanopts.NoColor {
 			builder.WriteString(aurora.Magenta(resp.GetHeaderPart("Content-Type", ";")).String())
 		} else {
 			builder.WriteString(resp.GetHeaderPart("Content-Type", ";"))
@@ -465,9 +464,9 @@ retry:
 	}
 
 	title := httpx.ExtractTitle(resp)
-	if scanopts.OutputTitle {
+	if scanopts.ExtractTitle {
 		builder.WriteString(" [")
-		if !scanopts.OutputWithNoColor {
+		if !scanopts.NoColor {
 			builder.WriteString(aurora.Cyan(title).String())
 		} else {
 			builder.WriteString(title)
@@ -558,7 +557,7 @@ retry:
 		}
 
 		domainFile = strings.ReplaceAll(domainFile, "/", "_") + ".txt"
-		responsePath := path.Join(scanopts.StoreResponseDirectory, domainFile)
+		responsePath := path.Join(scanopts.StoreResponseDir, domainFile)
 		err := ioutil.WriteFile(responsePath, []byte(resp.Raw), 0644)
 		if err != nil {
 			gologger.Warningf("Could not write response, at path '%s', to disc.", responsePath)
@@ -623,207 +622,4 @@ func (r *Result) JSON() string {
 	}
 
 	return ""
-}
-
-// Options contains configuration options for chaos client.
-type Options struct {
-	CustomHeaders             customheader.CustomHeaders
-	CustomPorts               customport.CustomPorts
-	matchStatusCode           []int
-	matchContentLength        []int
-	filterStatusCode          []int
-	filterContentLength       []int
-	Output                    string
-	StoreResponseDir          string
-	HTTPProxy                 string
-	SocksProxy                string
-	InputFile                 string
-	Methods                   string
-	RequestURI                string
-	OutputMatchStatusCode     string
-	OutputMatchContentLength  string
-	OutputFilterStatusCode    string
-	OutputFilterContentLength string
-	InputRawRequest           string
-	rawRequest                string
-	RequestBody               string
-	OutputFilterString        string
-	OutputMatchString         string
-	OutputFilterRegex         string
-	OutputMatchRegex          string
-	Retries                   int
-	Threads                   int
-	Timeout                   int
-	filterRegex               *regexp.Regexp
-	matchRegex                *regexp.Regexp
-	VHost                     bool
-	Smuggling                 bool
-	ExtractTitle              bool
-	StatusCode                bool
-	Location                  bool
-	ContentLength             bool
-	FollowRedirects           bool
-	StoreResponse             bool
-	JSONOutput                bool
-	Silent                    bool
-	Version                   bool
-	Verbose                   bool
-	NoColor                   bool
-	OutputServerHeader        bool
-	OutputWebSocket           bool
-	responseInStdout          bool
-	FollowHostRedirects       bool
-	OutputMethod              bool
-	TLSProbe                  bool
-	CSPProbe                  bool
-	OutputContentType         bool
-	OutputIP                  bool
-	OutputCName               bool
-	Unsafe                    bool
-	Debug                     bool
-	Pipeline                  bool
-	HTTP2Probe                bool
-	OutputCDN                 bool
-}
-
-// ParseOptions parses the command line options for application
-func ParseOptions() *Options {
-	options := &Options{}
-
-	flag.IntVar(&options.Threads, "threads", 50, "Number of threads")
-	flag.IntVar(&options.Retries, "retries", 0, "Number of retries")
-	flag.IntVar(&options.Timeout, "timeout", 5, "Timeout in seconds")
-	flag.StringVar(&options.Output, "o", "", "File to write output to (optional)")
-	flag.BoolVar(&options.VHost, "vhost", false, "Check for VHOSTs")
-	flag.BoolVar(&options.ExtractTitle, "title", false, "Extracts title")
-	flag.BoolVar(&options.StatusCode, "status-code", false, "Extracts status code")
-	flag.BoolVar(&options.Location, "location", false, "Extracts location header")
-	flag.Var(&options.CustomHeaders, "H", "Custom Header")
-	flag.Var(&options.CustomPorts, "ports", "ports range (nmap syntax: eg 1,2-10,11)")
-	flag.BoolVar(&options.ContentLength, "content-length", false, "Extracts content length")
-	flag.BoolVar(&options.StoreResponse, "sr", false, "Save response to file (default 'output')")
-	flag.StringVar(&options.StoreResponseDir, "srd", "output", "Save response directory")
-	flag.BoolVar(&options.FollowRedirects, "follow-redirects", false, "Follow Redirects")
-	flag.BoolVar(&options.FollowHostRedirects, "follow-host-redirects", false, "Only follow redirects on the same host")
-	flag.StringVar(&options.HTTPProxy, "http-proxy", "", "HTTP Proxy, eg http://127.0.0.1:8080")
-	flag.BoolVar(&options.JSONOutput, "json", false, "JSON Output")
-	flag.StringVar(&options.InputFile, "l", "", "File containing domains")
-	flag.StringVar(&options.Methods, "x", "", "Request Methods, use ALL to check all verbs ()")
-	flag.BoolVar(&options.OutputMethod, "method", false, "Output method")
-	flag.BoolVar(&options.Silent, "silent", false, "Silent mode")
-	flag.BoolVar(&options.Version, "version", false, "Show version of httpx")
-	flag.BoolVar(&options.Verbose, "verbose", false, "Verbose Mode")
-	flag.BoolVar(&options.NoColor, "no-color", false, "No Color")
-	flag.BoolVar(&options.OutputServerHeader, "web-server", false, "Extracts server header")
-	flag.BoolVar(&options.OutputWebSocket, "websocket", false, "Prints out if the server exposes a websocket")
-	flag.BoolVar(&options.responseInStdout, "response-in-json", false, "Server response directly in the tool output (-json only)")
-	flag.BoolVar(&options.TLSProbe, "tls-probe", false, "Send HTTP probes on the extracted TLS domains")
-	flag.BoolVar(&options.CSPProbe, "csp-probe", false, "Send HTTP probes on the extracted CSP domains")
-	flag.StringVar(&options.RequestURI, "path", "", "Request path/file (example '/api')")
-	flag.BoolVar(&options.OutputContentType, "content-type", false, "Extracts content-type")
-	flag.StringVar(&options.OutputMatchStatusCode, "mc", "", "Match status code")
-	flag.StringVar(&options.OutputMatchStatusCode, "ml", "", "Match content length")
-	flag.StringVar(&options.OutputFilterStatusCode, "fc", "", "Filter status code")
-	flag.StringVar(&options.OutputFilterContentLength, "fl", "", "Filter content length")
-	flag.StringVar(&options.InputRawRequest, "request", "", "File containing raw request")
-	flag.BoolVar(&options.Unsafe, "unsafe", false, "Send raw requests skipping golang normalization")
-	flag.StringVar(&options.RequestBody, "body", "", "Request Body")
-	flag.BoolVar(&options.Debug, "debug", false, "Debug mode")
-	flag.BoolVar(&options.Pipeline, "pipeline", false, "HTTP1.1 Pipeline")
-	flag.BoolVar(&options.HTTP2Probe, "http2", false, "HTTP2 probe")
-	flag.BoolVar(&options.OutputIP, "ip", false, "Output target ip")
-	flag.StringVar(&options.OutputFilterString, "filter-string", "", "Filter String")
-	flag.StringVar(&options.OutputMatchString, "match-string", "", "Match string")
-	flag.StringVar(&options.OutputFilterRegex, "filter-regex", "", "Filter Regex")
-	flag.StringVar(&options.OutputMatchRegex, "match-regex", "", "Match Regex")
-	flag.BoolVar(&options.OutputCName, "cname", false, "Output first cname")
-	flag.BoolVar(&options.OutputCDN, "cdn", false, "Check if domain's ip belongs to known CDN (akamai, cloudflare, ..)")
-
-	flag.Parse()
-
-	// Read the inputs and configure the logging
-	options.configureOutput()
-
-	showBanner()
-
-	if options.Version {
-		gologger.Infof("Current Version: %s\n", Version)
-		os.Exit(0)
-	}
-
-	options.validateOptions()
-
-	return options
-}
-
-func (options *Options) validateOptions() {
-	if options.InputFile != "" && !fileutil.FileExists(options.InputFile) {
-		gologger.Fatalf("File %s does not exist!\n", options.InputFile)
-	}
-
-	if options.InputRawRequest != "" && !fileutil.FileExists(options.InputRawRequest) {
-		gologger.Fatalf("File %s does not exist!\n", options.InputRawRequest)
-	}
-
-	var err error
-	if options.matchStatusCode, err = stringz.StringToSliceInt(options.OutputMatchStatusCode); err != nil {
-		gologger.Fatalf("Invalid value for match status code option: %s\n", err)
-	}
-	if options.matchContentLength, err = stringz.StringToSliceInt(options.OutputMatchContentLength); err != nil {
-		gologger.Fatalf("Invalid value for match content length option: %s\n", err)
-	}
-	if options.filterStatusCode, err = stringz.StringToSliceInt(options.OutputFilterStatusCode); err != nil {
-		gologger.Fatalf("Invalid value for filter status code option: %s\n", err)
-	}
-	if options.filterContentLength, err = stringz.StringToSliceInt(options.OutputFilterContentLength); err != nil {
-		gologger.Fatalf("Invalid value for filter content length option: %s\n", err)
-	}
-	if options.OutputFilterRegex != "" {
-		if options.filterRegex, err = regexp.Compile(options.OutputFilterRegex); err != nil {
-			gologger.Fatalf("Invalid value for regex filter option: %s\n", err)
-		}
-	}
-	if options.OutputMatchRegex != "" {
-		if options.matchRegex, err = regexp.Compile(options.OutputMatchRegex); err != nil {
-			gologger.Fatalf("Invalid value for match regex option: %s\n", err)
-		}
-	}
-}
-
-// configureOutput configures the output on the screen
-func (options *Options) configureOutput() {
-	// If the user desires verbose output, show verbose output
-	if options.Verbose {
-		gologger.MaxLevel = gologger.Verbose
-	}
-	if options.Debug {
-		gologger.MaxLevel = gologger.Debug
-	}
-	if options.NoColor {
-		gologger.UseColors = false
-	}
-	if options.Silent {
-		gologger.MaxLevel = gologger.Silent
-	}
-}
-
-const banner = `
-    __    __  __       _  __
-   / /_  / /_/ /_____ | |/ /
-  / __ \/ __/ __/ __ \|   /
- / / / / /_/ /_/ /_/ /   |
-/_/ /_/\__/\__/ .___/_/|_|
-             /_/              v1.0.2
-`
-
-// Version is the current version of httpx
-const Version = `1.0.2`
-
-// showBanner is used to show the banner to the user
-func showBanner() {
-	gologger.Printf("%s\n", banner)
-	gologger.Printf("\t\tprojectdiscovery.io\n\n")
-
-	gologger.Labelf("Use with caution. You are responsible for your actions\n")
-	gologger.Labelf("Developers assume no liability and are not responsible for any misuse or damage.\n")
 }
