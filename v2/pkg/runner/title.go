@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/projectdiscovery/httpx/v2/pkg/utils/encodingutils"
 	"golang.org/x/net/html"
 )
 
@@ -21,7 +22,7 @@ func ExtractTitle(r *Response) (title string) {
 
 		// special cases
 		if strings.Contains(contentType, "charset=GB2312") {
-			titleUtf8, err := Decodegbk([]byte(title))
+			titleUtf8, err := encodingutils.Decodegbk([]byte(title))
 			if err != nil {
 				return
 			}
