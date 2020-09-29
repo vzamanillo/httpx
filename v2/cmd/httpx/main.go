@@ -31,6 +31,8 @@ import (
 const (
 	maxFileNameLenght = 255
 	tokenParts        = 2
+	one               = 1
+	two               = 2
 )
 
 // TODO, move this to pkg/runner/runner.go
@@ -49,14 +51,19 @@ func main() {
 	var key, value string
 	httpxOptions.CustomHeaders = make(map[string]string)
 	for _, customHeader := range options.CustomHeaders {
-		tokens := strings.SplitN(customHeader, ":", tokenParts)
-		// if it's an invalid header skip it
-		if len(tokens) < tokenParts {
+		tokens := strings.SplitN(customHeader, ":", two)
+		// rawhttp skips all checks
+		if options.Unsafe {
+			httpxOptions.CustomHeaders[customHeader] = ""
+			continue
+		}
+
+		// Continue normally
+		if len(tokens) < two {
 			continue
 		}
 		key = strings.TrimSpace(tokens[0])
 		value = strings.TrimSpace(tokens[1])
-
 		httpxOptions.CustomHeaders[key] = value
 	}
 
@@ -69,7 +76,7 @@ func main() {
 			gologger.Fatalf("Could not read raw request from '%s': %s\n", options.InputRawRequest, err)
 		}
 
-		rrMethod, rrPath, rrHeaders, rrBody, err := httputils.ParseRequest(string(rawRequest))
+		rrMethod, rrPath, rrHeaders, rrBody, err := httputils.ParseRequest(string(rawRequest), options.Unsafe)
 		if err != nil {
 			gologger.Fatalf("Could not parse raw request: %s\n", err)
 		}
@@ -84,9 +91,11 @@ func main() {
 
 	// disable automatic host header for rawhttp if manually specified
 	if options.Unsafe {
-		_, ok := httpxOptions.CustomHeaders["Host"]
-		if ok {
-			rawhttp.AutomaticHostHeader(false)
+		for name := range hp.CustomHeaders {
+			nameLower := strings.TrimSpace(strings.ToLower(name))
+			if strings.HasPrefix(nameLower, "host") {
+				rawhttp.AutomaticHostHeader(false)
+			}
 		}
 	}
 
@@ -623,7 +632,7 @@ type Result struct {
 	Pipeline      bool            `json:"pipeline,omitempty"`
 	HTTP2         bool            `json:"http2"`
 	CDN           bool            `json:"cdn"`
-	Duration      time.Duration  `json:"duration"`
+	Duration      time.Duration   `json:"duration"`
 }
 
 // JSON the result
