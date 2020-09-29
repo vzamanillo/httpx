@@ -16,7 +16,7 @@ func (h *HTTPX) SupportPipeline(protocol, method, host string, port int) bool {
 	addr := host
 	if port == 0 {
 		port = 80
-		if protocol == "https" {
+		if protocol == HTTPS {
 			port = 443
 		}
 	}
@@ -62,10 +62,10 @@ func (h *HTTPX) SupportPipeline(protocol, method, host string, port int) bool {
 
 func pipelineDial(protocol, addr string) (net.Conn, error) {
 	// http
-	if protocol == "http" {
-		return net.Dial("tcp", addr)
+	if protocol == HTTP {
+		return net.Dial(TCP, addr)
 	}
 
 	// https
-	return tls.Dial("tcp", addr, &tls.Config{InsecureSkipVerify: true})
+	return tls.Dial(TCP, addr, &tls.Config{InsecureSkipVerify: true})
 }

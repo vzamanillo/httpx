@@ -18,6 +18,15 @@ import (
 	"golang.org/x/net/http2"
 )
 
+const (
+	// HTTP defines the plain http scheme
+	HTTP = "http"
+	// HTTPS defines the secure http scheme
+	HTTPS = "https"
+	// TCP defines the tcp protocol
+	TCP = "tcp"
+)
+
 // HTTPX represent an instance of the library client
 type HTTPX struct {
 	client          *retryablehttp.Client
