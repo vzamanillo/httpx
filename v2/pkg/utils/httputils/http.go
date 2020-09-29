@@ -15,6 +15,8 @@ import (
 const (
 	headerParts  = 2
 	requestParts = 3
+	// AllMethods defines when to use all HTTP methods
+	AllMethods = "all"
 )
 
 // AllHTTPMethods contains all available HTTP methods
