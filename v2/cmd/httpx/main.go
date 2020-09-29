@@ -33,6 +33,7 @@ const (
 	tokenParts        = 2
 )
 
+// TODO, move this to pkg/runner/runner.go
 func main() {
 	options := runner.ParseOptions()
 
@@ -89,7 +90,7 @@ func main() {
 		}
 	}
 
-	if strings.EqualFold(options.Methods, "all") {
+	if strings.EqualFold(options.Methods, httputils.AllMethods) {
 		scanopts.Methods = httputils.AllHTTPMethods()
 	} else if options.Methods != "" {
 		scanopts.Methods = append(scanopts.Methods, stringutils.SplitAndTrimSpaces(options.Methods, ",")...)
