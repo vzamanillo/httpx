@@ -1,4 +1,4 @@
-package resolve
+package dns
 
 import (
 	"bytes"
@@ -9,9 +9,8 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
+	"github.com/projectdiscovery/httpx/v2/pkg/utils/dnsutils"
 )
-
-const defaultPort = "53"
 
 // Client dns instance
 type Client struct {
@@ -53,7 +52,7 @@ func New(baseResolvers []string, maxRetries int) (*Client, error) {
 	rand.Seed(time.Now().UnixNano())
 	client := Client{maxRetries: maxRetries}
 	// fails on non unix systems so we just don't care
-	resolvers, _ := ReadResolveConfig("/etc/resolv.conf")
+	resolvers, _ := dnsutils.ReadResolveConfig("/etc/resolv.conf")
 	client.resolvers = append(client.resolvers, resolvers...)
 	client.resolvers = append(client.resolvers, baseResolvers...)
 	return &client, nil

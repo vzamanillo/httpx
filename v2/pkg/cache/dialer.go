@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/coocood/freecache"
-	dns "github.com/projectdiscovery/httpx/v2/pkg/resolve"
+	"github.com/projectdiscovery/httpx/v2/pkg/dns"
 )
 
 var (

@@ -1,10 +1,12 @@
-package resolve
+package dnsutils
 
 import (
 	"net"
 
 	"github.com/miekg/dns"
 )
+
+const defaultPort = "53"
 
 // ReadResolveConfig retrieve resolvers from os
 func ReadResolveConfig(configFile string) ([]string, error) {
