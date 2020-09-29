@@ -376,6 +376,7 @@ retry:
 
 	hp.SetCustomHeaders(req, hp.CustomHeaders)
 	if scanopts.RequestBody != "" {
+		req.ContentLength = int64(len(scanopts.RequestBody))
 		req.Body = ioutil.NopCloser(strings.NewReader(scanopts.RequestBody))
 	}
 
