@@ -89,16 +89,6 @@ func main() {
 		options.RawRequest = string(rawRequest)
 	}
 
-	// disable automatic host header for rawhttp if manually specified
-	if options.Unsafe {
-		for name := range hp.CustomHeaders {
-			nameLower := strings.TrimSpace(strings.ToLower(name))
-			if strings.HasPrefix(nameLower, "host") {
-				rawhttp.AutomaticHostHeader(false)
-			}
-		}
-	}
-
 	if strings.EqualFold(options.Methods, httputils.AllMethods) {
 		scanopts.Methods = httputils.AllHTTPMethods()
 	} else if options.Methods != "" {
@@ -235,6 +225,16 @@ func main() {
 	hp, err := runner.New(&httpxOptions)
 	if err != nil {
 		gologger.Fatalf("Could not create httpx instance: %s\n", err)
+	}
+
+	// disable automatic host header for rawhttp if manually specified
+	if options.Unsafe {
+		for name := range hp.CustomHeaders {
+			nameLower := strings.TrimSpace(strings.ToLower(name))
+			if strings.HasPrefix(nameLower, "host") {
+				rawhttp.AutomaticHostHeader(false)
+			}
+		}
 	}
 
 	for scanner.Scan() {
