@@ -12,7 +12,7 @@ import (
 
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/projectdiscovery/cdncheck"
-	"github.com/projectdiscovery/httpx/v2/pkg/cache"
+	"github.com/projectdiscovery/httpx/v2/pkg/dns"
 	"github.com/projectdiscovery/httpx/v2/pkg/utils/httputils"
 	"github.com/projectdiscovery/rawhttp"
 	retryablehttp "github.com/projectdiscovery/retryablehttp-go"
@@ -43,7 +43,7 @@ type HTTPX struct {
 // New httpx instance
 func New(options *ClientOptions) (*HTTPX, error) {
 	httpx := &HTTPX{}
-	dialer, err := cache.NewDialer(cache.DefaultOptions)
+	dialer, err := dns.NewDialer(dns.DefaultOptions)
 	if err != nil {
 		return nil, fmt.Errorf("could not create resolver cache: %s", err)
 	}

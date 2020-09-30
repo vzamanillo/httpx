@@ -1,4 +1,4 @@
-package cache
+package dns
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/coocood/freecache"
-	"github.com/projectdiscovery/httpx/v2/pkg/dns"
 )
 
 var (
@@ -28,7 +27,7 @@ type DialerFunc func(context.Context, string, string) (net.Conn, error)
 // NewDialer gets a new Dialer instance using a resolver cache
 func NewDialer(options Options) (DialerFunc, error) {
 	var err error
-	cache, err = New(options)
+	cache, err = NewCache(options)
 	if err != nil {
 		return nil, err
 	}
@@ -71,6 +70,6 @@ func GetDialedIP(hostname string) string {
 }
 
 // GetDNSData cached by the resolver
-func GetDNSData(hostname string) (*dns.Result, error) {
+func GetDNSData(hostname string) (*Result, error) {
 	return cache.Lookup(hostname)
 }

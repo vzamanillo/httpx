@@ -1,10 +1,9 @@
-package cache
+package dns
 
 import (
 	"net"
 
 	"github.com/coocood/freecache"
-	"github.com/projectdiscovery/httpx/v2/pkg/dns"
 )
 
 const megaByteBytes = 1048576
@@ -18,7 +17,7 @@ type Cache struct {
 
 // Resolver interface
 type Resolver interface {
-	Resolve(string) (dns.Result, error)
+	Resolve(string) (Result, error)
 }
 
 // Options of the cache
@@ -45,9 +44,9 @@ var DefaultResolvers = []string{
 	"8.8.4.4:53",
 }
 
-// New creates a new caching dns resolver
-func New(options Options) (*Cache, error) {
-	dnsClient, err := dns.New(options.BaseResolvers, options.MaxRetries)
+// NewCache creates a new caching dns resolver
+func NewCache(options Options) (*Cache, error) {
+	dnsClient, err := NewClient(options.BaseResolvers, options.MaxRetries)
 	if err != nil {
 		return nil, err
 	}
@@ -56,9 +55,9 @@ func New(options Options) (*Cache, error) {
 }
 
 // Lookup a hostname
-func (c *Cache) Lookup(hostname string) (*dns.Result, error) {
+func (c *Cache) Lookup(hostname string) (*Result, error) {
 	if ip := net.ParseIP(hostname); ip != nil {
-		return &dns.Result{IPs: []string{hostname}}, nil
+		return &Result{IPs: []string{hostname}}, nil
 	}
 	hostnameBytes := []byte(hostname)
 	value, err := c.cache.Get(hostnameBytes)
@@ -84,7 +83,7 @@ func (c *Cache) Lookup(hostname string) (*dns.Result, error) {
 		return &result, nil
 	}
 
-	var result dns.Result
+	var result Result
 
 	err = result.Unmarshal(value)
 	if err != nil {

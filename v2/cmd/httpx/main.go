@@ -15,7 +15,7 @@ import (
 	"github.com/logrusorgru/aurora"
 	_ "github.com/projectdiscovery/fdmax/autofdmax"
 	"github.com/projectdiscovery/gologger"
-	"github.com/projectdiscovery/httpx/v2/pkg/cache"
+	"github.com/projectdiscovery/httpx/v2/pkg/dns"
 	customport "github.com/projectdiscovery/httpx/v2/pkg/customports"
 	"github.com/projectdiscovery/httpx/v2/pkg/runner"
 	"github.com/projectdiscovery/httpx/v2/pkg/utils/fileutils"
@@ -530,7 +530,7 @@ retry:
 		}
 	}
 
-	ip := cache.GetDialedIP(domain)
+	ip := dns.GetDialedIP(domain)
 	if scanopts.OutputIP {
 		builder.WriteString(fmt.Sprintf(" [%s]", ip))
 	}
@@ -539,7 +539,7 @@ retry:
 		ips    []string
 		cnames []string
 	)
-	dnsData, err := cache.GetDNSData(domain)
+	dnsData, err := dns.GetDNSData(domain)
 	if dnsData != nil && err == nil {
 		ips = dnsData.IPs
 		cnames = dnsData.CNAMEs

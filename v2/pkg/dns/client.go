@@ -47,8 +47,8 @@ func (r *Result) Unmarshal(b []byte) error {
 	return nil
 }
 
-// New creates a new dns client
-func New(baseResolvers []string, maxRetries int) (*Client, error) {
+// NewClient creates a new dns client
+func NewClient(baseResolvers []string, maxRetries int) (*Client, error) {
 	rand.Seed(time.Now().UnixNano())
 	client := Client{maxRetries: maxRetries}
 	// fails on non unix systems so we just don't care
