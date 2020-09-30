@@ -23,9 +23,9 @@ type Response struct {
 
 // GetHeader value
 func (r *Response) GetHeader(name string) string {
-	v, ok := r.Headers[name]
+	header, ok := r.Headers[name]
 	if ok {
-		return strings.Join(v, " ")
+		return strings.Join(header, " ")
 	}
 
 	return ""
@@ -33,10 +33,9 @@ func (r *Response) GetHeader(name string) string {
 
 // GetHeaderPart with offset
 func (r *Response) GetHeaderPart(name, sep string) string {
-	v, ok := r.Headers[name]
-	if ok && len(v) > 0 {
-		tokens := strings.Split(strings.Join(v, " "), sep)
-		return tokens[0]
+	header := r.GetHeader(name)
+	if header != "" {
+		return strings.Split(header, sep)[0]
 	}
 
 	return ""
