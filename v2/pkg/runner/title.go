@@ -8,9 +8,14 @@ import (
 	"golang.org/x/net/html"
 )
 
+const (
+	simplifiedChineseCharset = "charset=GB2312"
+	titleRegex = `(?im)<\s*title.*>(.*?)<\s*/\s*title>`
+)
+
 // ExtractTitle from a response
 func ExtractTitle(r *Response) (title string) {
-	var re = regexp.MustCompile(`(?im)<\s*title.*>(.*?)<\s*/\s*title>`)
+	var re = regexp.MustCompile(titleRegex)
 	for _, match := range re.FindAllString(r.Raw, -1) {
 		title = html.UnescapeString(trimTitleTags(match))
 		break
@@ -21,7 +26,7 @@ func ExtractTitle(r *Response) (title string) {
 		contentType := strings.Join(contentTypes, ";")
 
 		// special cases
-		if strings.Contains(contentType, "charset=GB2312") {
+		if strings.Contains(contentType, simplifiedChineseCharset) {
 			titleUtf8, err := encodingutils.Decodegbk([]byte(title))
 			if err != nil {
 				return
