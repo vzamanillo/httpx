@@ -8,7 +8,7 @@ import (
 )
 
 // CSPHeaders is an incomplete list of most v2/pkg CSP headers
-var CSPHeaders []string = []string{
+var CSPHeaders = [4]string{
 	"Content-Security-Policy",               // standard
 	"Content-Security-Policy-Report-Only",   // standard
 	"X-Content-Security-Policy-Report-Only", // non - standard
@@ -20,8 +20,8 @@ type CSPData struct {
 	Domains []string `json:"domains,omitempty"`
 }
 
-// CSPGrab fills the CSPData
-func (h *HTTPX) CSPGrab(r *http.Response) *CSPData {
+// GetCSPData fills the CSPData
+func (h *HTTPX) GetCSPData(r *http.Response) *CSPData {
 	domains := make(map[string]struct{})
 	for _, cspHeader := range CSPHeaders {
 		cspRaw := r.Header.Get(cspHeader)

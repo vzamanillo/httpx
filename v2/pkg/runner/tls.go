@@ -14,8 +14,8 @@ type TLSData struct {
 	IssuerOrg        []string `json:"issuer_organization,omitempty"`
 }
 
-// TLSGrab fills the TLSData
-func (h *HTTPX) TLSGrab(r *http.Response) *TLSData {
+// GetTLSData fills the TLSData
+func (h *HTTPX) GetTLSData(r *http.Response) *TLSData {
 	if r.TLS != nil {
 		var tlsdata TLSData
 		for _, certificate := range r.TLS.PeerCertificates {

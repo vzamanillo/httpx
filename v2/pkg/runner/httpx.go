@@ -174,10 +174,10 @@ func (h *HTTPX) Do(req *retryablehttp.Request) (*Response, error) {
 
 	if !h.Options.Unsafe {
 		// extracts TLS data if any
-		resp.TLSData = h.TLSGrab(httpresp)
+		resp.TLSData = h.GetTLSData(httpresp)
 	}
 
-	resp.CSPData = h.CSPGrab(httpresp)
+	resp.CSPData = h.GetCSPData(httpresp)
 
 	resp.Duration = time.Since(timeStart)
 
