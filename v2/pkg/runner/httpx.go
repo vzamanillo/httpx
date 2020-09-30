@@ -24,6 +24,10 @@ const (
 	HTTP = "http"
 	// HTTPS defines the secure http scheme
 	HTTPS = "https"
+	// HTTPPort defines the default HTTP TCP port
+	HTTPPort = 80
+	// HTTPSPort defines the default Secure HTTP TCP port
+	HTTPSPort = 443
 	// TCP defines the tcp protocol
 	TCP = "tcp"
 )

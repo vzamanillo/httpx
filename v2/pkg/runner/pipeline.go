@@ -8,19 +8,24 @@ import (
 	"time"
 )
 
+const (
+	mega = 1024
+	nprobes = 10
+)
+
 // SupportPipeline checks if the target host supports HTTP1.1 pipelining by sending x probes
 // and reading back responses expecting at least 2 with HTTP/1.1 or HTTP/1.0
 func (h *HTTPX) SupportPipeline(protocol, method, host string, port int) bool {
 	addr := host
 	if port == 0 {
-		port = 80
+		port = HTTPPort
 		if protocol == HTTPS {
-			port = 443
+			port = HTTPSPort
 		}
 	}
-	if port > 0 {
-		addr = fmt.Sprintf("%s:%d", host, port)
-	}
+
+	addr = fmt.Sprintf("%s:%d", host, port)
+
 	// dummy method while awaiting for full rawhttp implementation
 	dummyReq := fmt.Sprintf("%s / HTTP/1.1\nHost: %s\n\n", method, addr)
 	conn, err := pipelineDial(protocol, addr)
@@ -28,14 +33,13 @@ func (h *HTTPX) SupportPipeline(protocol, method, host string, port int) bool {
 		return false
 	}
 	// send some probes
-	nprobes := 10
 	for i := 0; i < nprobes; i++ {
 		if _, err = conn.Write([]byte(dummyReq)); err != nil {
 			return false
 		}
 	}
 	gotReplies := 0
-	reply := make([]byte, 1024)
+	reply := make([]byte, mega)
 	for i := 0; i < nprobes; i++ {
 		err := conn.SetReadDeadline(time.Now().Add(1 * time.Second))
 		if err != nil {
